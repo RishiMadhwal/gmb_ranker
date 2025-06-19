@@ -33,7 +33,7 @@ def fetch_google_results(query, location, lat, lng, limit=100):
 
     url = "https://serpapi.com/search.json"
     params = {
-        "engine": "google",
+        "engine": "google_maps",
         "q": f"{query} in {location}",
         "location": location,
         "ll": f"{lat},{lng}",
