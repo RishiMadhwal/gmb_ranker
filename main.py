@@ -1,24 +1,47 @@
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from utils.helper import get_coordinates, fetch_google_results, check_business_rank
 
-def main():
-    business_name = input("Enter your business name: ").strip()
-    category = input("Enter business category (e.g., cafes, salons): ").strip()
-    location = input("Enter location: ").strip()
+app = FastAPI()
+
+# Enable CORS so React can connect
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Or restrict to ["http://localhost:3000"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.post("/api/scrape")
+async def scrape(request: Request):
+    body = await request.json()
+    business_name = body.get("business")
+    category = body.get("keyword")
+    location = body.get("location")
 
     lat, lng = get_coordinates(location)
     if lat is None or lng is None:
-        print("Could not get coordinates. Exiting.")
-        return
+        return {"error": "Could not get coordinates."}
 
     results = fetch_google_results(category, location, lat, lng)
 
-    check = input("Do you want to check if your business is in top 100? (yes/no): ").strip().lower()
-    if check == "yes":
+    rank = None
+    if business_name:
         rank = check_business_rank(results, business_name)
-        if rank:
-            print(f"✅ '{business_name}' found at position #{rank}")
-        else:
-            print(f"❌ '{business_name}' not found in top 100 results.")
+
+    return {
+        "results": [
+            {
+                "name": r.get("title", "No Title"),
+                "address": r.get("link", "No Link"),
+                "rating": "N/A"  # Placeholder
+            }
+            for r in results
+        ],
+        "rank": rank
+    }
 
 if __name__ == "__main__":
-    main()
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8000)
