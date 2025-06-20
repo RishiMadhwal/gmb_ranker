@@ -39,6 +39,6 @@ async def scrape(request: Request):
 
     if business_name:
         rank = check_business_rank(results, business_name)
-        response["rank"] = rank
+        response["rank"] = rank # type: ignore
 
     return response
