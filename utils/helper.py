@@ -24,35 +24,80 @@ def get_coordinates(location):
         return None, None
 
 
+# def fetch_google_results(query, location, lat, lng, limit=100):
+#     """Use SerpAPI to fetch top results for category in location."""
+#     SERPAPI_KEY = os.getenv("SERPAPI_KEY")
+#     if not SERPAPI_KEY:
+#         print("SERPAPI_KEY not found in .env")
+#         return []
+
+#     url = "https://serpapi.com/search.json"
+#     params = {
+#     "engine": "google_maps",
+#     "q": f"{query} in {location}",
+#     "location": location,
+#     # "ll": f"@{lat},{lng},14z",  # temporarily remove
+#     "hl": "en",
+#     "gl": "in",
+#     "api_key": SERPAPI_KEY
+# }
+
+
+#     response = requests.get(url, params=params)
+#     data = response.json()
+
+#     results = data.get("organic_results", [])
+#     print(f"\nTop {limit} Google Results for '{query}' in '{location}':\n")
+#     for i, result in enumerate(results[:limit], 1):
+#         title = result.get("title", "No Title")
+#         link = result.get("link", "No Link")
+#         print(f"{i}. {title}\n   {link}\n")
+
+#     return results[:limit]
+
 def fetch_google_results(query, location, lat, lng, limit=100):
     """Use SerpAPI to fetch top results for category in location."""
     SERPAPI_KEY = os.getenv("SERPAPI_KEY")
     if not SERPAPI_KEY:
-        print("SERPAPI_KEY not found in .env")
+        print("❌ SERPAPI_KEY not found in .env")
         return []
+
+    print(f"🔍 Searching SerpAPI for '{query}' in '{location}' at ({lat}, {lng})")
 
     url = "https://serpapi.com/search.json"
     params = {
         "engine": "google_maps",
         "q": f"{query} in {location}",
         "location": location,
-        "ll": f"{lat},{lng}",
+        "ll": f"@{lat},{lng},14z",  # ✅ Critical fix: correct format
         "hl": "en",
         "gl": "in",
         "api_key": SERPAPI_KEY
     }
 
-    response = requests.get(url, params=params)
-    data = response.json()
+    prepared_url = requests.Request('GET', url, params=params).prepare().url
+    print("🔗 Final SerpAPI URL:", prepared_url)
 
-    results = data.get("organic_results", [])
-    print(f"\nTop {limit} Google Results for '{query}' in '{location}':\n")
+    response = requests.get(url, params=params)
+    try:
+        data = response.json()
+        print("📦 Full SerpAPI response:")
+        import json
+        print(json.dumps(data, indent=2))
+    except Exception as e:
+        print("❌ Failed to parse SerpAPI JSON:", e)
+        return []
+
+    results = data.get("local_results", [])
+    print(f"✅ Found {len(results)} results from SerpAPI")
+
     for i, result in enumerate(results[:limit], 1):
         title = result.get("title", "No Title")
         link = result.get("link", "No Link")
         print(f"{i}. {title}\n   {link}\n")
 
     return results[:limit]
+
 
 
 def check_business_rank(results, business_name):
